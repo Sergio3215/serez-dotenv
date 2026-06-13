@@ -1,0 +1,80 @@
+// serez-dotenv — carga y fusión de capas .env según el modo
+//
+// loadEnv(dir, mode) lee las capas que correspondan desde `dir`, las fusiona en
+// orden de prioridad ascendente y devuelve un EnvResolver listo para consultar.
+//
+// Capas (de menor a mayor prioridad):
+//   .env            (base, siempre)
+//   .env.local      (personalización del desarrollador, siempre)
+//   .env.<modo>     (solo si modo es dev/qa — capa superior)
+//
+// El modo "local" no añade capa superior: queda .env < .env.local.
+//
+// Process es la clase de entrada de la librería: recibe el modo y expone `.env`.
+
+import "parser"
+import "resolver"
+
+// Une dos arrays-paralelos: parte de (keys, vals) y aplica (nk, nv) encima.
+// Las claves de (nk, nv) sobrescriben; las nuevas se agregan. Devuelve copias
+// nuevas [keys, vals] (no muta las entradas) para respetar la semántica por valor.
+export fn mergePairs(keys, vals, nk, nv) {
+    let rk = []
+    let rv = []
+    for (let i = 0; i < keys.length(); i = i + 1) {
+        rk.push(keys[i])
+        rv.push(vals[i])
+    }
+    for (let j = 0; j < nk.length(); j = j + 1) {
+        let idx = findKeyIndex(rk, nk[j])
+        if (idx >= 0) {
+            rv[idx] = nv[j]
+        } else {
+            rk.push(nk[j])
+            rv.push(nv[j])
+        }
+    }
+    return [rk, rv]
+}
+
+// Construye la ruta de un archivo .env dentro de `dir`.
+export fn envPath(dir, name) {
+    if (dir == "" || dir == ".") { return name }
+    return dir + "/" + name
+}
+
+// Carga las capas desde `dir` según `mode` y devuelve un EnvResolver.
+export fn loadEnv(dir, mode) {
+    let keys = []
+    let vals = []
+
+    // .env (base)
+    let base = readEnvFile(envPath(dir, ".env"))
+    let r1 = mergePairs(keys, vals, base[0], base[1])
+    keys = r1[0]
+    vals = r1[1]
+
+    // .env.local (personalización)
+    let loc = readEnvFile(envPath(dir, ".env.local"))
+    let r2 = mergePairs(keys, vals, loc[0], loc[1])
+    keys = r2[0]
+    vals = r2[1]
+
+    // .env.<modo> (capa superior; el modo "local" no añade nada extra)
+    if (mode != "local" && mode != "") {
+        let top = readEnvFile(envPath(dir, ".env." + mode))
+        let r3 = mergePairs(keys, vals, top[0], top[1])
+        keys = r3[0]
+        vals = r3[1]
+    }
+
+    return new EnvResolver(keys, vals)
+}
+
+export public class Process {
+    // mode: "dev" | "qa" | "local". Carga los .env del directorio actual.
+    public Process(mode) {
+        this.mode = mode
+        this.env  = loadEnv(".", mode)
+    }
+}

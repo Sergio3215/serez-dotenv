@@ -1,0 +1,37 @@
+// serez-dotenv — resolución de variables con jerarquía de capas
+//
+// EnvResolver guarda las capas .env ya fusionadas (arrays paralelos keys/vals,
+// donde la capa de mayor prioridad ya sobrescribió a las inferiores) y resuelve
+// cada consulta cayendo al entorno del SISTEMA como último recurso.
+//
+// Jerarquía (de menor a mayor prioridad):
+//   System  <  .env  <  .env.local  <  .env.<modo>
+//
+// Es SOLO LECTURA: nunca hace Env.set ni muta el entorno real del proceso.
+
+use permissions { Env }
+
+export public class EnvResolver {
+    public EnvResolver(keys, vals) {
+        this.keys = keys
+        this.vals = vals
+    }
+
+    // Resuelve una variable. Devuelve el valor de la capa .env de mayor
+    // prioridad que la defina; si ninguna lo hace, cae al entorno del sistema.
+    // Devuelve null si no existe en ninguna capa ni en el sistema.
+    public string? get(key) {
+        for (let i = 0; i < this.keys.length(); i = i + 1) {
+            if (this.keys[i] == key) { return this.vals[i] }
+        }
+        return Env.get(key)
+    }
+
+    // true si la variable está definida en alguna capa .env (sin mirar el sistema).
+    public bool has(key) {
+        for (let i = 0; i < this.keys.length(); i = i + 1) {
+            if (this.keys[i] == key) { return true }
+        }
+        return false
+    }
+}

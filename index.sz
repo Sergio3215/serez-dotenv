@@ -1,0 +1,26 @@
+// serez-dotenv — cargador de archivos .env para Serez-Code
+// Version 1.0.0
+//
+// Uso:
+//   import "serez-dotenv"
+//   let process = new Process("dev")        // modo: dev | qa | local
+//   let host = process.env.get("HOST")      // null si no existe en ninguna capa
+//
+// Jerarquía de resolución (menor → mayor prioridad):
+//   System  <  .env  <  .env.local  <  .env.<modo>
+//
+// SOLO LECTURA: nunca muta el entorno real del proceso (no hace Env.set).
+//
+// API:
+//   Process(mode)          ← clase de entrada; carga los .env del directorio actual
+//   process.env.get(key)   ← valor resuelto (string) o null
+//   process.env.has(key)   ← true si está definida en alguna capa .env (ignora System)
+//   loadEnv(dir, mode)     ← carga las capas desde `dir` y devuelve un EnvResolver
+//                            (útil para tests o para leer .env de otra carpeta)
+//
+// Permiso requerido: "Env" (lo declara la propia librería; el consumidor no
+// necesita declararlo). Lectura de archivos vía File (sin permiso).
+
+import "src/parser"
+import "src/resolver"
+import "src/process"

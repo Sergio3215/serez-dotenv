@@ -1,0 +1,12 @@
+# Archivos .env del desarrollador en la raíz del repo (NO los fixtures de tests/)
+/.env
+/.env.*
+
+# Sondas y temporales
+_probe.sz
+_e2e/
+*.tmp
+*.ps1
+*.sh
+implementacion.md
+/tests/

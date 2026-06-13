@@ -1,0 +1,75 @@
+// serez-dotenv — parser de archivos .env
+//
+// Convierte el texto de un .env en dos arrays paralelos [keys, vals].
+// Reglas de parseo (estilo dotenv):
+//   - Una variable por línea: KEY=VALUE
+//   - Líneas vacías → ignoradas
+//   - Líneas que empiezan con '#' → comentario, ignoradas
+//   - Prefijo opcional 'export ' → se descarta (export KEY=VALUE)
+//   - Espacios alrededor de la clave y el valor → recortados (trim)
+//   - Comillas envolventes "..." o '...' alrededor del valor → se quitan
+//   - Si no hay '=' o la clave queda vacía → la línea se ignora
+//
+// El parser NO interpreta comentarios en línea (KEY=val # comentario): el '#'
+// solo es comentario cuando es el primer carácter de la línea.
+
+// Índice de una clave en el array (o -1 si no está). Comparación exacta.
+export fn findKeyIndex(keys, key) {
+    for (let i = 0; i < keys.length(); i = i + 1) {
+        if (keys[i] == key) { return i }
+    }
+    return -1
+}
+
+// Quita un par de comillas simples o dobles envolventes, si las hay.
+export fn stripQuotes(v) {
+    if (v.length() >= 2) {
+        let first = v.substring(0, 1)
+        let last  = v.substring(v.length() - 1, v.length())
+        if (first == "\"" && last == "\"") { return v.substring(1, v.length() - 1) }
+        if (first == "'"  && last == "'")  { return v.substring(1, v.length() - 1) }
+    }
+    return v
+}
+
+// Parsea el texto de un .env → [keys, vals] (arrays paralelos).
+// Si una clave aparece repetida dentro del MISMO archivo, gana la última.
+export fn parseEnvText(text) {
+    let keys = []
+    let vals = []
+    let lines = text.split("\n")
+    for (let i = 0; i < lines.length(); i = i + 1) {
+        let line = lines[i].trim()
+        if (line.length() > 0) {
+            let firstCh = line.substring(0, 1)
+            if (firstCh != "#") {
+                if (line.startsWith("export ")) {
+                    line = line.substring(7, line.length()).trim()
+                }
+                let eq = line.indexOf("=")
+                if (eq > 0) {
+                    let key = line.substring(0, eq).trim()
+                    let val = stripQuotes(line.substring(eq + 1, line.length()).trim())
+                    if (key.length() > 0) {
+                        let idx = findKeyIndex(keys, key)
+                        if (idx >= 0) {
+                            vals[idx] = val
+                        } else {
+                            keys.push(key)
+                            vals.push(val)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return [keys, vals]
+}
+
+// Lee y parsea un archivo .env. Si no existe → [[], []] (capa vacía).
+export fn readEnvFile(path) {
+    if (File.exists(path)) {
+        return parseEnvText(File.read(path))
+    }
+    return [[], []]
+}

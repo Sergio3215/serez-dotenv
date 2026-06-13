@@ -1,0 +1,7 @@
+tests/
+/tests/
+implementacion.md
+_probe.sz
+_e2e/
+*.ps1
+*.sh

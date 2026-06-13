@@ -1,0 +1,11 @@
+{
+  "name": "serez-dotenv",
+  "version": "1.0.0",
+  "description": "Cargador de archivos .env para Serez-Code — capas .env/.env.local/.env.<modo>, solo lectura",
+  "main": "index.sz",
+  "author": "Sergio3215",
+  "dependencies": {},
+  "permissions": [
+    "Env"
+  ]
+}
